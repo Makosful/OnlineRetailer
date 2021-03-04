@@ -1,5 +1,4 @@
-﻿using System;
-namespace OrderApi.Models
+﻿namespace OrderApi.Models
 {
     public class Product
     {
@@ -8,5 +7,6 @@ namespace OrderApi.Models
         public decimal Price { get; set; }
         public int ItemsInStock { get; set; }
         public int ItemsReserved { get; set; }
+        public int Quantity { get; set; }
     }
 }

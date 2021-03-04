@@ -1,51 +1,66 @@
-﻿using System.Collections.Generic;
-using Microsoft.EntityFrameworkCore;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
+using OrderApi.Data.Abstractions;
 using OrderApi.Models;
-using System;
 
 namespace OrderApi.Data
 {
-    public class OrderRepository : IRepository<Order>
+    public class OrderRepository : IOrderRepository
     {
-        private readonly OrderApiContext db;
+        private readonly OrderApiContext _context;
 
         public OrderRepository(OrderApiContext context)
         {
-            db = context;
+            _context = context;
+            _context.Database.EnsureCreated();
         }
 
-        Order IRepository<Order>.Add(Order entity)
+        Order IOrderRepository.Get(int id)
         {
-            if (entity.Date == null)
-                entity.Date = DateTime.Now;
-            
-            var newOrder = db.Orders.Add(entity).Entity;
-            db.SaveChanges();
+            var orderQuery = from orders in _context.Orders
+                where orders.Id == id
+                select orders;
+            var order = orderQuery.ToList()[0];
+
+            return order;
+        }
+
+        Order IOrderRepository.Add(Order order)
+        {
+            if (order.Date == null)
+                order.Date = DateTime.Now;
+
+            var newOrder = _context.Orders.Add(order).Entity;
+            _context.SaveChanges();
             return newOrder;
         }
 
-        void IRepository<Order>.Edit(Order entity)
+        void IOrderRepository.Remove(int id)
         {
-            db.Entry(entity).State = EntityState.Modified;
-            db.SaveChanges();
+            var order = _context.Orders.FirstOrDefault(p => p.Id == id);
+            _context.Orders.Remove(order!);
+            _context.SaveChanges();
         }
 
-        Order IRepository<Order>.Get(int id)
+        bool IOrderRepository.UpdateStatus(int orderId, OrderStatus orderStatus)
         {
-            return db.Orders.FirstOrDefault(o => o.Id == id);
+            var order = _context.Orders.FirstOrDefault(x => x.Id == orderId);
+            if (order == null) return false;
+
+            order.Status = orderStatus;
+            _context.Orders.Update(order);
+
+            var changes = _context.SaveChanges();
+            return changes > 0;
         }
 
-        IEnumerable<Order> IRepository<Order>.GetAll()
+        IEnumerable<Order> IOrderRepository.GetAll()
         {
-            return db.Orders.ToList();
-        }
+            var orderQuery = from orders in _context.Orders
+                select orders;
 
-        void IRepository<Order>.Remove(int id)
-        {
-            var order = db.Orders.FirstOrDefault(p => p.Id == id);
-            db.Orders.Remove(order);
-            db.SaveChanges();
+            return orderQuery.ToList();
         }
     }
 }

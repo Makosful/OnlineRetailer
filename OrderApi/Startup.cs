@@ -1,17 +1,13 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.HttpsPolicy;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using OrderApi.Data;
+using OrderApi.Data.Abstractions;
+using OrderApi.Logic;
+using OrderApi.Logic.Abstractions;
 using OrderApi.Models;
 
 namespace OrderApi
@@ -29,13 +25,12 @@ namespace OrderApi
         public void ConfigureServices(IServiceCollection services)
         {
             // In-memory database:
-            services.AddDbContext<OrderApiContext>(opt => opt.UseInMemoryDatabase("OrdersDb"));
+            services.AddDbContext<OrderApiContext>();
 
-            // Register repositories for dependency injection
-            services.AddScoped<IRepository<Order>, OrderRepository>();
-
-            // Register database initializer for dependency injection
-            services.AddTransient<IDbInitializer, DbInitializer>();
+            services.AddScoped<IOrderService, OrderService>();
+            services.AddScoped<IOrderRepository, OrderRepository>();
+            services.AddScoped<IProductOrderRepository, ProductOrderRepository>();
+            services.AddScoped<IProductRest, ProductRestClient>();
 
             services.AddControllers();
         }
@@ -49,25 +44,17 @@ namespace OrderApi
                 // Initialize the database
                 var services = scope.ServiceProvider;
                 var dbContext = services.GetService<OrderApiContext>();
-                var dbInitializer = services.GetService<IDbInitializer>();
-                dbInitializer.Initialize(dbContext);
             }
 
-            if (env.IsDevelopment())
-            {
-                app.UseDeveloperExceptionPage();
-            }
+            if (env.IsDevelopment()) app.UseDeveloperExceptionPage();
 
-            app.UseHttpsRedirection();
+            //app.UseHttpsRedirection();
 
             app.UseRouting();
 
             app.UseAuthorization();
 
-            app.UseEndpoints(endpoints =>
-            {
-                endpoints.MapControllers();
-            });
+            app.UseEndpoints(endpoints => { endpoints.MapControllers(); });
         }
     }
 }

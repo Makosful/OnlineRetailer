@@ -7,41 +7,74 @@ namespace ProductApi.Data
 {
     public class ProductRepository : IRepository<Product>
     {
-        private readonly ProductApiContext db;
-
+        private readonly ProductApiContext _context;
+        private readonly List<Product> _products;
+        
         public ProductRepository(ProductApiContext context)
         {
-            db = context;
+            _context = context;
+            _context.Database.EnsureCreated();
+
+            _products = new List<Product>()
+            {
+                new Product() {
+                    Id = 1, Name = "Generic item",
+                    Price = 5.00M, 
+                    ItemsInStock = 100,
+                    ItemsReserved = 5
+                },
+                new Product()
+                {
+                    Id = 2,
+                    Name = "Generic but expensive item",
+                    Price = 6.00M,
+                    ItemsInStock =  80,
+                    ItemsReserved = 3
+                },
+                new Product()
+                {
+                    Id = 3, 
+                    Name = "Rare version of generic item",
+                    Price = 10.00M,
+                    ItemsInStock =  60,
+                    ItemsReserved = 1
+                },
+            };
         }
 
         Product IRepository<Product>.Add(Product entity)
         {
-            var newProduct = db.Products.Add(entity).Entity;
-            db.SaveChanges();
-            return newProduct;
+            return entity;
         }
 
         void IRepository<Product>.Edit(Product entity)
         {
-            db.Entry(entity).State = EntityState.Modified;
-            db.SaveChanges();
+            // Do nothing
         }
 
         Product IRepository<Product>.Get(int id)
         {
-            return db.Products.FirstOrDefault(p => p.Id == id);
+            switch (id)
+            {
+                case 1:
+                    return _products[0];
+                case 2:
+                    return _products[1];
+                case 3:
+                    return _products[2];
+                default:
+                    return null;
+            }
         }
 
         IEnumerable<Product> IRepository<Product>.GetAll()
         {
-            return db.Products.ToList();
+            return _products;
         }
 
         void IRepository<Product>.Remove(int id)
         {
-            var product = db.Products.FirstOrDefault(p => p.Id == id);
-            db.Products.Remove(product);
-            db.SaveChanges();
+            // Do nothing for now
         }
     }
 }

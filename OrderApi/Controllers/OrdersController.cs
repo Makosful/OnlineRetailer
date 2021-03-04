@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using Microsoft.AspNetCore.Mvc;
 using OrderApi.Data;
+using OrderApi.Data.Abstractions;
+using OrderApi.Logic.Abstractions;
 using OrderApi.Models;
 using RestSharp;
 
@@ -11,69 +13,67 @@ namespace OrderApi.Controllers
     [Route("[controller]")]
     public class OrdersController : ControllerBase
     {
-        private readonly IRepository<Order> repository;
+        private readonly IOrderService _orderService;
 
-        public OrdersController(IRepository<Order> repos)
+        public OrdersController(IOrderService orderService)
         {
-            repository = repos;
+            _orderService = orderService;
         }
 
         // GET: orders
         [HttpGet]
         public IEnumerable<Order> Get()
         {
-            return repository.GetAll();
+            return _orderService.GetAll();
         }
 
         // GET orders/5
         [HttpGet("{id}", Name = "GetOrder")]
         public IActionResult Get(int id)
         {
-            var item = repository.Get(id);
-            if (item == null)
-            {
-                return NotFound();
-            }
-            return new ObjectResult(item);
+            var order = _orderService.Get(id);
+            if (order == null) return NotFound();
+            return new ObjectResult(order);
         }
 
         // POST orders
         [HttpPost]
-        public IActionResult Post([FromBody]Order order)
+        public IActionResult Post([FromBody] Order order)
         {
-            if (order == null)
+            if (order == null) 
+                return BadRequest("Order must be submitted in the request body");
+            if (order.Products == null || order.Products.Count < 1)
+                return BadRequest("An order must contain at least one product");
+
+            try
+            {
+                var o = _orderService.Add(order);
+
+                return Created($"orders/{o.Id}", o);
+            }
+            catch (ArgumentException e)
+            {
+                return BadRequest(e.Message);
+            }
+        }
+
+        [HttpPut("{orderId}/status")]
+        public IActionResult UpdateOrderStatus(int orderId, [FromBody] string status)
+        {
+            var parse = Enum.TryParse(status, out OrderStatus orderStatus);
+            
+            if (!parse) return BadRequest($"Unknown status. Request rejected");
+
+            bool updated = _orderService.UpdateStatus(orderId, orderStatus);
+
+            if (updated)
+            {
+                return Ok($"Status set to [{orderStatus}]");
+            }
+            else
             {
                 return BadRequest();
             }
-
-            // Call ProductApi to get the product ordered
-            RestClient c = new RestClient();
-            // You may need to change the port number in the BaseUrl below
-            // before you can run the request.
-            c.BaseUrl = new Uri("https://localhost:5001/products/");
-            var request = new RestRequest(order.ProductId.ToString(), Method.GET);
-            var response = c.Execute<Product>(request);
-            var orderedProduct = response.Data;
-
-            if (order.Quantity <= orderedProduct.ItemsInStock - orderedProduct.ItemsReserved)
-            {
-                // reduce the number of items in stock for the ordered product,
-                // and create a new order.
-                orderedProduct.ItemsReserved += order.Quantity;
-                var updateRequest = new RestRequest(orderedProduct.Id.ToString(), Method.PUT);
-                updateRequest.AddJsonBody(orderedProduct);
-                var updateResponse = c.Execute(updateRequest);
-
-                if (updateResponse.IsSuccessful)
-                {
-                    var newOrder = repository.Add(order);
-                    return CreatedAtRoute("GetOrder", new { id = newOrder.Id }, newOrder);
-                }
-            }
-
-            // If the order could not be created, "return no content".
-            return NoContent();
         }
-
     }
 }
