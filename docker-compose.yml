@@ -1,0 +1,31 @@
+version: "3.8"
+
+services:
+  productapi:
+    image: "${DOCKER_REGISTRY-}productapi"
+    build:
+      dockerfile: "ProductApi/Dockerfile"
+      context: "."
+    environment:
+      - "ASPNETCORE_ENVIRONMENT=Development"
+      - "ASPNETCORE_URLS=http://+:443;http://+:80"
+    ports:
+      - "80"
+      - "443"
+    volumes:
+      - "~/.aspnet/https:/root/.aspnet/https:ro"
+      - "~/.microsoft/usersecrets:/root/.microsoft/usersecrets:ro"
+  orderapi:
+    image: "${DOCKER_REGISTRY-}orderapi"
+    build:
+      dockerfile: "OrderApi/Dockerfile"
+      context: "."
+    environment:
+      - "ASPNETCORE_ENVIRONMENT=Development"
+      - "ASPNETCORE_URLS=http://+:443;http://+:80"
+    ports:
+      - "80"
+      - "443"
+    volumes:
+      - "~/.aspnet/https:/root/.aspnet/https:ro"
+      - "~/.microsoft/usersecrets:/root/.microsoft/usersecrets:ro"

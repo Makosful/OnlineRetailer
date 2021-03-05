@@ -8,7 +8,7 @@ namespace OrderApi.Data
     public class ProductRestClient : IProductRest
     {
         // 5000 is unsecure HTTP. 5001 is secure HTTPS
-        private const string ProductApi = "http://localhost:5000";
+        private const string ProductApi = "http://productapi";
 
         private readonly RestClient _client;
 
