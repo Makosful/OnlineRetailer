@@ -32,6 +32,8 @@ namespace OrderApi
             services.AddScoped<IProductOrderRepository, ProductOrderRepository>();
             services.AddScoped<IProductRest, ProductRestClient>();
 
+            services.AddSingleton<IMessagePublisher, RabbitMessaging>();
+
             services.AddControllers();
         }
 

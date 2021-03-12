@@ -14,10 +14,12 @@ namespace OrderApi.Controllers
     public class OrdersController : ControllerBase
     {
         private readonly IOrderService _orderService;
+        private readonly IMessagePublisher _publisher;
 
-        public OrdersController(IOrderService orderService)
+        public OrdersController(IOrderService orderService, IMessagePublisher publisher)
         {
             _orderService = orderService;
+            _publisher = publisher;
         }
 
         // GET: orders
@@ -64,7 +66,11 @@ namespace OrderApi.Controllers
             
             if (!parse) return BadRequest($"Unknown status. Request rejected");
 
-            bool updated = _orderService.UpdateStatus(orderId, orderStatus);
+            //bool updated = _orderService.UpdateStatus(orderId, orderStatus);
+            const bool updated = true;
+
+            Order order = _orderService.Get(orderId);
+            _publisher.PublishOrderStatusChangedMessage(order.Products, "completed");
 
             if (updated)
             {
