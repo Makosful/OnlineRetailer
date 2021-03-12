@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using EasyNetQ;
+using Entities;
 using OrderApi.Data.Abstractions;
 using OrderApi.Models;
 
@@ -9,7 +10,7 @@ namespace OrderApi.Data
 {
     public class RabbitMessaging: IMessagePublisher, IDisposable
     {
-        private const string ConnectionString = "";
+        private const string ConnectionString = "host=192.168.1.177;username=guest;password=guest";
         private readonly IBus _bus;
 
         public RabbitMessaging()
@@ -24,10 +25,11 @@ namespace OrderApi.Data
 
         void IMessagePublisher.PublishOrderStatusChangedMessage(List<Product> products, string topic)
         {
+            var orderLines = products.Select(product => new OrderLine() {Name = product.Name}).ToList();
             var message = new OrderStatusChangedMessage()
             {
                 CustomerId = 0,
-                Products = products
+                Products = orderLines
             };
             
             _bus.PubSub.Publish(message, topic);

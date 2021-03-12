@@ -58,6 +58,9 @@ namespace ProductApi
                 app.UseDeveloperExceptionPage();
             }
 
+            Task.Factory.StartNew(() =>
+                new RabbitMessaging(app.ApplicationServices.GetService<ILogger<RabbitMessaging>>()).Listen());
+
             //app.UseHttpsRedirection();
 
             app.UseRouting();
